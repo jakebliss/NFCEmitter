@@ -6,6 +6,8 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -59,5 +61,11 @@ public class MessageCreatorActivity extends AppCompatActivity {
                     }
                 break;
         }
+    }
+
+    public NdefMessage createUriMessage(String content, String type) {
+        NdefRecord record = NdefRecord.createUri(type + content);
+        NdefMessage msg = new NdefMessage(new NdefRecord[]{record});
+        return msg;
     }
 }
