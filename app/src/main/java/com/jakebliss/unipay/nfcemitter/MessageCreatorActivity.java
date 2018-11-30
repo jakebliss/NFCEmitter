@@ -14,6 +14,9 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Locale;
@@ -21,6 +24,8 @@ import java.util.Locale;
 public class MessageCreatorActivity extends AppCompatActivity {
     private NFCManager nfcMger = null;
     final private int NFC_PERMISSION_CODE = 1000;
+    private Button mPayButton;
+    private EditText mAmount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,31 +33,42 @@ public class MessageCreatorActivity extends AppCompatActivity {
         nfcMger = new NFCManager(this);
         setContentView(R.layout.activity_message_creator);
 
+        mPayButton = (Button) findViewById(R.id.pay_button);
+        mAmount = (EditText) findViewById(R.id.amount_et);
+
         if (ContextCompat.checkSelfPermission( MessageCreatorActivity.this, Manifest.permission.NFC)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MessageCreatorActivity.this, new String[]{
                     Manifest.permission.READ_EXTERNAL_STORAGE}, NFC_PERMISSION_CODE);
         }
+
+        mPayButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                emitPayment();
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        try {
-            nfcMger.verifyNFC();
-            Intent nfcIntent = new Intent(this, getClass());
-            nfcIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, nfcIntent, 0);
-            IntentFilter[] intentFiltersArray = new IntentFilter[]{};
-            String[][] techList = new String[][]{
-                    {android.nfc.tech.Ndef.class.getName()},
-                    {android.nfc.tech.NdefFormatable.class.getName()}
-            };
-            NfcAdapter nfcAdpt = NfcAdapter.getDefaultAdapter(this);
-            nfcAdpt.enableForegroundDispatch(this, pendingIntent, intentFiltersArray, techList);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            nfcMger.verifyNFC();
+//            Intent nfcIntent = new Intent(this, getClass());
+//            nfcIntent.putExtra("Payment", createTextMessage("1000"));
+//            nfcIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+//            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, nfcIntent, 0);
+//            IntentFilter[] intentFiltersArray = new IntentFilter[]{};
+//            String[][] techList = new String[][]{
+//                    {android.nfc.tech.Ndef.class.getName()},
+//                    {android.nfc.tech.NdefFormatable.class.getName()}
+//            };
+//            NfcAdapter nfcAdpt = NfcAdapter.getDefaultAdapter(this);
+//            nfcAdpt.enableForegroundDispatch(this, pendingIntent, intentFiltersArray, techList);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
@@ -95,5 +111,24 @@ public class MessageCreatorActivity extends AppCompatActivity {
         }
 
         return null;
+    }
+
+    public void emitPayment () {
+        try {
+            nfcMger.verifyNFC();
+            Intent nfcIntent = new Intent(this, getClass());
+            nfcIntent.putExtra("Payment", createTextMessage(mAmount.getText().toString()));
+            nfcIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, nfcIntent, 0);
+            IntentFilter[] intentFiltersArray = new IntentFilter[]{};
+            String[][] techList = new String[][]{
+                    {android.nfc.tech.Ndef.class.getName()},
+                    {android.nfc.tech.NdefFormatable.class.getName()}
+            };
+            NfcAdapter nfcAdpt = NfcAdapter.getDefaultAdapter(this);
+            nfcAdpt.enableForegroundDispatch(this, pendingIntent, intentFiltersArray, techList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
