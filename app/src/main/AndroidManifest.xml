@@ -9,16 +9,31 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MessageCreatorActivity">
+        <activity android:name=".MessageCreatorActivity"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!--<intent-filter>-->
+                <!--<action android:name="android.nfc.action.NDEF_DISCOVERED" />-->
+                <!--<category android:name="android.intent.category.DEFAULT"/>-->
+                <!--<data android:mimeType="text/plain" />-->
+            <!--</intent-filter>-->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http"
+                    android:host="play.google.com"
+                    android:pathPrefix="/store/apps/details?id=com.jakebliss.unipay.unipay" />
             </intent-filter>
         </activity>
     </application>
 
     <uses-permission
     android:name="android.permission.NFC" />
+
+    <uses-feature android:name="android.hardware.nfc" android:required="true"/>
 
 </manifest>

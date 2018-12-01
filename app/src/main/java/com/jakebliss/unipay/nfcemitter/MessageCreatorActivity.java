@@ -3,38 +3,63 @@ package com.jakebliss.unipay.nfcemitter;
 
 import android.Manifest;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
+import android.nfc.Tag;
+import android.nfc.TagLostException;
+import android.nfc.tech.Ndef;
+import android.nfc.tech.NdefFormatable;
+import android.os.Build;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Locale;
 
-public class MessageCreatorActivity extends AppCompatActivity {
+import static java.text.Normalizer.Form.NFC;
+
+public class MessageCreatorActivity extends AppCompatActivity implements NfcAdapter.OnNdefPushCompleteCallback,
+        NfcAdapter.CreateNdefMessageCallback{
     private NFCManager nfcMger = null;
     final private int NFC_PERMISSION_CODE = 1000;
     private Button mPayButton;
-    private EditText mAmount;
+    private TextView mAmount;
+    private TextView mProduct;
+    private NfcAdapter mNFCAdapter = null;
+    private ArrayList<String> messagesToSendArray = new ArrayList<>();
+    private ArrayList<String> messagesReceivedArray = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        nfcMger = new NFCManager(this);
+        //nfcMger = new NFCManager(this);
         setContentView(R.layout.activity_message_creator);
 
         mPayButton = (Button) findViewById(R.id.pay_button);
-        mAmount = (EditText) findViewById(R.id.amount_et);
+        mAmount = (TextView) findViewById(R.id.amount_tv);
+        mProduct = (TextView) findViewById(R.id.product_tv);
+
+        setPayment(3.50, "Yerba Mate");
 
         if (ContextCompat.checkSelfPermission( MessageCreatorActivity.this, Manifest.permission.NFC)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -42,33 +67,103 @@ public class MessageCreatorActivity extends AppCompatActivity {
                     Manifest.permission.READ_EXTERNAL_STORAGE}, NFC_PERMISSION_CODE);
         }
 
+
         mPayButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                emitPayment();
+                addPaymentRecords(mAmount.getText().toString(), mProduct.getText().toString());
             }
         });
+
+        mNFCAdapter = NfcAdapter.getDefaultAdapter(this);
+
+        if(mNFCAdapter != null) {
+            mNFCAdapter.setNdefPushMessageCallback(this, this);
+            mNFCAdapter.setOnNdefPushCompleteCallback(this, this);
+        }
+
+        handleNfcIntent(getIntent());
     }
 
     @Override
-    protected void onResume() {
+    public void onNdefPushComplete(NfcEvent event) {
+        messagesToSendArray.clear();
+    }
+
+    @Override
+    public NdefMessage createNdefMessage(NfcEvent event) {
+        if (messagesToSendArray.size() == 0) {
+            return null;
+        }
+        NdefRecord[] recordsToAttach = createRecords();
+        return new NdefMessage(recordsToAttach);
+    }
+
+    public NdefRecord[] createRecords() {
+        NdefRecord[] records = new NdefRecord[messagesToSendArray.size() + 1];
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            for (int i = 0; i < messagesToSendArray.size(); i++) {
+                byte[] payload = messagesToSendArray.get(i).
+                        getBytes(Charset.forName("UTF-8"));
+
+                NdefRecord record = new NdefRecord(
+                        NdefRecord.TNF_WELL_KNOWN,
+                        NdefRecord.RTD_TEXT,
+                        new byte[0],
+                        payload);
+
+                records[i] = record;
+            }
+        }
+        else {
+            for (int i = 0; i < messagesToSendArray.size(); i++){
+                byte[] payload = messagesToSendArray.get(i).
+                        getBytes(Charset.forName("UTF-8"));
+
+                NdefRecord record = NdefRecord.createMime("text/plain",payload);
+                records[i] = record;
+            }
+        }
+        records[messagesToSendArray.size()] =
+                NdefRecord.createApplicationRecord(getPackageName());
+        return records;
+    }
+
+    private void handleNfcIntent(Intent NfcIntent) {
+        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(NfcIntent.getAction())) {
+            Parcelable[] receivedArray =
+                    NfcIntent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+
+            if(receivedArray != null) {
+                messagesReceivedArray.clear();
+                NdefMessage receivedMessage = (NdefMessage) receivedArray[0];
+                NdefRecord[] attachedRecords = receivedMessage.getRecords();
+
+                for (NdefRecord record:attachedRecords) {
+                    String string = new String(record.getPayload());
+                    if (string.equals(getPackageName())) { continue; }
+                    messagesReceivedArray.add(string);
+                }
+                Toast.makeText(this, "Received " + messagesReceivedArray.size() +
+                        " Messages", Toast.LENGTH_LONG).show();
+            }
+            else {
+                Toast.makeText(this, "Received Blank Parcel", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        Log.d("Jake", "newIntent");
+        handleNfcIntent(intent);
+    }
+
+    @Override
+    public void onResume() {
         super.onResume();
-//        try {
-//            nfcMger.verifyNFC();
-//            Intent nfcIntent = new Intent(this, getClass());
-//            nfcIntent.putExtra("Payment", createTextMessage("1000"));
-//            nfcIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, nfcIntent, 0);
-//            IntentFilter[] intentFiltersArray = new IntentFilter[]{};
-//            String[][] techList = new String[][]{
-//                    {android.nfc.tech.Ndef.class.getName()},
-//                    {android.nfc.tech.NdefFormatable.class.getName()}
-//            };
-//            NfcAdapter nfcAdpt = NfcAdapter.getDefaultAdapter(this);
-//            nfcAdpt.enableForegroundDispatch(this, pendingIntent, intentFiltersArray, techList);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        handleNfcIntent(getIntent());
     }
 
     @Override
@@ -113,22 +208,14 @@ public class MessageCreatorActivity extends AppCompatActivity {
         return null;
     }
 
-    public void emitPayment () {
-        try {
-            nfcMger.verifyNFC();
-            Intent nfcIntent = new Intent(this, getClass());
-            nfcIntent.putExtra("Payment", createTextMessage(mAmount.getText().toString()));
-            nfcIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, nfcIntent, 0);
-            IntentFilter[] intentFiltersArray = new IntentFilter[]{};
-            String[][] techList = new String[][]{
-                    {android.nfc.tech.Ndef.class.getName()},
-                    {android.nfc.tech.NdefFormatable.class.getName()}
-            };
-            NfcAdapter nfcAdpt = NfcAdapter.getDefaultAdapter(this);
-            nfcAdpt.enableForegroundDispatch(this, pendingIntent, intentFiltersArray, techList);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private void setPayment(Double amount, String product) {
+        mAmount.setText(String.valueOf(amount));
+        mProduct.setText(product);
     }
+
+    private void addPaymentRecords(String amount, String product) {
+        messagesToSendArray.add(amount);
+        messagesToSendArray.add(product);
+    }
+
 }

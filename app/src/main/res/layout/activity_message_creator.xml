@@ -6,13 +6,21 @@
     android:layout_height="match_parent"
     tools:context=".MessageCreatorActivity">
 
-    <EditText
-        android:id="@+id/amount_et"
+    <TextView
+        android:id="@+id/product_tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="number"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/amount_tv"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"/>
+
+    <TextView
+        android:id="@+id/amount_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/product_tv"
         app:layout_constraintBottom_toTopOf="@id/pay_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -22,8 +30,8 @@
         android:id="@+id/pay_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="PAY"
-        app:layout_constraintTop_toBottomOf="@id/amount_et"
+        android:text="CHARGE"
+        app:layout_constraintTop_toBottomOf="@id/amount_tv"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
