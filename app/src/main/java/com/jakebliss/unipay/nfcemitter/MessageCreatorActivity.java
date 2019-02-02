@@ -214,8 +214,8 @@ public class MessageCreatorActivity extends AppCompatActivity implements NfcAdap
     }
 
     private void addPaymentRecords(String amount, String product) {
-        messagesToSendArray.add(amount);
-        messagesToSendArray.add(product);
+        messagesToSendArray.add("AMOUNT#" + amount);
+        messagesToSendArray.add("PRODUCT#" + product);
     }
 
 }
