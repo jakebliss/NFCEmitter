@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">NFCEmitter</string>
+    <string name="service_name">CardEmulation</string>
+    <string name="card_title">Charge Card</string>
+    <string name="price_number">Price</string>
+    <string name="description">Description</string>
 </resources>
