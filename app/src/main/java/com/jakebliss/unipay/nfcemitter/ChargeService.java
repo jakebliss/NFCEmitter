@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 public class ChargeService extends HostApduService {
     private static final String TAG = "CardService";
@@ -55,9 +56,10 @@ public class ChargeService extends HostApduService {
         // If the APDU matches the SELECT AID command for this service,
         // send the loyalty card account number, followed by a SELECT_OK status trailer (0x9000).
         if (Arrays.equals(SELECT_APDU, commandApdu)) {
+            String uuid = UUID.randomUUID().toString();
             String price = ChargeStorage.GetPrice(this);
             String description = ChargeStorage.GetDescription(this);
-            String charge = "CHARGE#" + price + "#" + description;
+            String charge = "CHARGE#" + uuid + "#" + price + "#" + description;
             byte[] chargeBytes = charge.getBytes();
             Log.i(TAG, "Sending charge: " + charge);
             return ConcatArrays(chargeBytes, SELECT_OK_SW);
