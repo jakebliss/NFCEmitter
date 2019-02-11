@@ -59,7 +59,7 @@ public class ChargeService extends HostApduService {
             String uuid = UUID.randomUUID().toString();
             String price = ChargeStorage.GetPrice(this);
             String description = ChargeStorage.GetDescription(this);
-            String charge = "CHARGE#" + uuid + "#" + price + "#" + description;
+            String charge = "CHARGE#" + uuid + "#" + price + "#" + description + "#" + "Education";
             byte[] chargeBytes = charge.getBytes();
             Log.i(TAG, "Sending charge: " + charge);
             return ConcatArrays(chargeBytes, SELECT_OK_SW);
